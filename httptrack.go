@@ -13,16 +13,18 @@
 //      // Inbound location, name, outbound location, name
 //	    {LocationHeader, "x-tracking-id", LocationHeader, "x-tracking-id"},
 //  })
+//
 // Then later in your code, as a response to an inbound request, because you've been passing ctx to
 // all of your functions, you need to make a http GET, instead of calling `http.NewRequestWithContext`
 // you call `httptrack.NewRequestWithContext` as a drop in replacement:
 //
 //  req := httptrack.NewRequestWithContext(ctx, "GET", "http://microservice1.example.com", nil)
-//  httptrack.Do(req) // The x-tracking-id header value from the inbound request is set for this http request too.
+//  http.Do(req)
+//
 //  // or simply use the handy:
 //  httptrack.Get(ctx, "http://microservice1.example.com")
 //
-// You can use all of the normal net/http functions, and just use `httptrack.AddContextData(req http.Request)` to set
+// You can also just use all of the normal net/http functions, and use `httptrack.AddContextData(req http.Request)` to set
 // the values for you.
 //
 package httptrack
