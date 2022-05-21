@@ -3,7 +3,6 @@ package httptrack_test
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -171,7 +170,6 @@ func TestNoContext(t *testing.T) {
 func TestMissingFunc(t *testing.T) {
 	// Return blah if header missing
 	missingFunc := func(field string, req http.Request) string {
-		fmt.Printf("missingFunc called\n")
 		return "blah"
 	}
 	// Look for x-header

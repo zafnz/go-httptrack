@@ -30,7 +30,6 @@ package httptrack
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 )
@@ -113,7 +112,6 @@ func Handler(next http.Handler, options Options, values []Value) http.Handler {
 			// If value is missing and there is a missing func, then call it
 			if outboundValue == "" && v.MissingFunc != nil {
 				outboundValue = v.MissingFunc(v.OutboundName, *r)
-				fmt.Printf("Got missing value %s\n", outboundValue)
 			}
 			if outboundValue != "" {
 				ctxValues = append(ctxValues, ctxValue{
@@ -181,11 +179,9 @@ func AddContextData(req *http.Request) error {
 			if req.URL == nil {
 				return errors.New("request has no URL set")
 			}
-			fmt.Printf("Setting query param %s=%s\n", v.name, v.value)
 			q := req.URL.Query()
 			q.Add(v.name, v.value)
 			req.URL.RawQuery = q.Encode()
-			fmt.Printf("%s\n", req.URL)
 		}
 	}
 	return nil
