@@ -128,3 +128,13 @@ func main() {
     })
 }
 ```
+
+## Client libraries
+Inside your company you may use multiple client libraries to make those outbound calls for your API
+server. Fortunately by design the client libraries can be switched over to using httptrack for 
+it's outbound requests with no impact or knowledge of callers requirements. Instead of using
+`http.NewRequestWithContext(ctx...)` they use the httptrack version, which is functionaly identical.
+
+When an HTTP service uses that library and uses httptrack, the outbound header fields are set 
+automatically, simply because the client library already uses httptrack. There is very little cost
+or reason not to convert your client libraries to use httptrack ahead of all the http api services.
