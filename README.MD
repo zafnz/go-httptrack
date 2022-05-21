@@ -32,17 +32,25 @@ the values for you.
 ```
 func ExampleHandler() {
 	mux := http.NewServeMux()
+
+    // Create the middleware hander, here we are specifying that the inbound HTTP header named
+    // "x-tracking-id" should be copied to all outbound calls, by setting their HTTP header to
+    // the same value.
+    // In addition, the inbound HTTP cookie named "session-id" should be converted into a HTTP
+    // header and set for all outbound calls. 
+	handler := httptrack.Handler(mux, httptrack.Options{}, []httptrack.Value{
+		{httptrack.LocationHeader, "x-tracking-id", httptrack.LocationHeader, "x-tracking-id", nil},
+		{httptrack.LocationCookie, "session-id", httptrack.LocationHeader, "x-client-session-id", nil},
+	})
+
 	mux.HandleFunc("/api", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
 		// This Get request will go out with the x-tracking-id and x-client-session-id header
 		// values set. (assuming the correct inbound values came in, see MissingFunc example)
 		httptrack.Get(ctx, "http://microservice1.example.com/serviceCall")
-	})
-	handler := httptrack.Handler(mux, httptrack.Options{}, []httptrack.Value{
-		{httptrack.LocationHeader, "x-tracking-id", httptrack.LocationHeader, "x-tracking-id", nil},
-		{httptrack.LocationCookie, "session-id", httptrack.LocationHeader, "x-client-session-id", nil},
-	})
+	})    
+
 	http.ListenAndServe("127.0.0.1:3000", handler)
 }
 ```
@@ -62,6 +70,20 @@ so it can be safely used to generate a session ID or similar that will be the sa
 ```
 func ExampleHandler_missingfunc() {
 	mux := http.NewServeMux()
+
+	missingFuncHandler := func(name string, r http.Request) string {
+		// Here we have access to the incoming request, and need to generate the x-tracking-id header
+		// value. If we return empty string no x-tracking-id will be set.
+		return "blah"
+	}
+
+	// The inbound HTTP header x-tracking-id should be copied to all outbound calls as an HTTP header
+	// with the same name. If the inbound call does not have an x-tracking-id header, then missingFuncHandler()
+	// is called, supplying "x-tracking-id" and a copy of the inbound http.Request
+	handler := httptrack.Handler(mux, httptrack.Options{}, []httptrack.Value{
+		{httptrack.LocationHeader, "x-tracking-id", httptrack.LocationHeader, "x-tracking-id", missingFuncHandler},
+	})
+
 	mux.HandleFunc("/api", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
@@ -70,15 +92,6 @@ func ExampleHandler_missingfunc() {
 		httptrack.Get(ctx, "http://microservice1.example.com/serviceCall")
 	})
 
-	missingFuncHandler := func(name string, r http.Request) string {
-		// Here we have access to the incoming request, and need to generate the x-tracking-id header
-		// value. If we return empty string no x-tracking-id will be set.
-		return "blah"
-	}
-
-	handler := httptrack.Handler(mux, httptrack.Options{}, []httptrack.Value{
-		{httptrack.LocationHeader, "x-tracking-id", httptrack.LocationHeader, "x-tracking-id", missingFuncHandler},
-	})
 	http.ListenAndServe("127.0.0.1:3000", handler)
 }
 ```

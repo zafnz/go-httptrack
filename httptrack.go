@@ -129,6 +129,8 @@ func Handler(next http.Handler, options Options, values []Value) http.Handler {
 	})
 }
 
+var ErrMissingContext = errors.New("no httptrack data found in context. Probably ctx wasn't set in httptrack.Handler or has become context.Background() at some point")
+
 // Create a new http.Request, but setting the appropriate outbound header/query/cookie (as specified in the original
 // httptrack.Handler functions value parameter). These values are passed around in the `ctx context.Context`, so you
 // should ensure that you pass ctx around when handling inbound requests (this is best practice anyhow).
@@ -144,19 +146,27 @@ func NewRequestWithContext(ctx context.Context, method, url string, body io.Read
 	}
 	err = AddContextData(req)
 	if err != nil {
-		return nil, err
+		// It's ok if the context is missing
+		if !errors.Is(err, ErrMissingContext) {
+			return nil, err
+		}
 	}
 	return req, nil
 }
 
 // While this library provides some nice wrapper functions, they all wrap around this. This function adds the
-// appropriate headers/cookies/params that were specified in the handler setup.
-// NOTE: It gets these values from req.Context(), so you should call `http.NewRequestWithContext()` with the
-// inbound request's context. (Or simply use `httptrack.NewRequestContext()`` which calls this function for you).
+// appropriate headers/cookies/params that were specified in the handler setup. If there is no http track
+// data in the context (eg this did not come from an inbound http event via the httptrack.Handler), then this
+// function returns httptrack.ErrMissingContext. You probably should just use httptrack.NewRequestWithContext()
+// instead -- unless you can't create the new request yourself, or you want to know if context is lost.
+//
+// NOTE: If you don't mind if there is no tracking data set, then you should ignore the ErrMissingContext returned
+// via:
+//  if errors.Is(err, httptrack.ErrMissingContext)
 func AddContextData(req *http.Request) error {
 	data, ok := req.Context().Value(ctxDataName("httptrack")).(ctxData)
 	if !ok {
-		return errors.New("no httptrack data found in context. Probably ctx wasn't set in httptrack.Handler or has become context.Background() at some point")
+		return ErrMissingContext
 	}
 	for _, v := range data.values {
 		switch v.location {
